@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://234d2pp3p2ba"]
+
+[ext_resource type="Script" uid="uid://x6f8q4erh23u" path="res://scenes/main/main.gd" id="1_hyk8p"]
+
+[node name="Node2D" type="Control" node_paths=PackedStringArray("main_counter")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hyk8p")
+main_counter = NodePath("CenterContainer/VBoxContainer/MainCounter")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(250, 150)
+layout_mode = 2
+
+[node name="MainCounter" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "no data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MainButton" type="Button" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "press me"
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/MainButton" to="." method="_on_main_button_pressed"]
