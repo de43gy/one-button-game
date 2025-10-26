@@ -38,6 +38,11 @@ jobs:
           use_preset_export_path: true
           presets_to_export: Web Export
 
+      - name: Add Telegram WebApp script
+        run: |
+          sed -i 's|</head>|<script src="https://telegram.org/js/telegram-web-app.js"></script>\n</head>|' build/web/index.html
+          echo "Telegram script added to index.html"
+
       - name: Verify Godot export
         run: |
           echo "Godot export completed"
