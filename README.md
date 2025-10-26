@@ -1,6 +1,6 @@
 # Godot-Telegram Mini App Game Prototype
 
-A click-counter game built with Godot 4.5 and integrated as a Telegram Mini App. Features server-side persistence, percentage-based leaderboards, and containerized deployment.
+A click-counter game built with Godot 4.5.1 and integrated as a Telegram Mini App. Features server-side persistence, percentage-based leaderboards, and containerized deployment.
 
 ## Features
 
@@ -14,7 +14,7 @@ A click-counter game built with Godot 4.5 and integrated as a Telegram Mini App.
 
 ## Tech Stack
 
-- **Client:** Godot 4.5 (GDScript)
+- **Client:** Godot 4.5.1 (GDScript)
 - **Backend:** Python 3.10+ with FastAPI, SQLAlchemy, asyncpg
 - **Database:** PostgreSQL 16
 - **Infrastructure:** Docker Compose, GitHub Actions
@@ -26,7 +26,7 @@ A click-counter game built with Godot 4.5 and integrated as a Telegram Mini App.
 - Docker & Docker Compose
 - Telegram Bot Token (via [@BotFather](https://t.me/botfather))
 - Python 3.10+ (for local development)
-- Godot 4.5 (for client development)
+- Godot 4.5.1 (for client development)
 
 ### Local Development
 
@@ -73,7 +73,7 @@ API_PORT=8000
 
 ```
 .
-├── client/               # Godot 4.5 project
+├── client/               # Godot 4.5.1 project
 │   ├── scenes/          # UI scenes
 │   └── scripts/         # GDScript logic
 ├── backend/             # FastAPI application
@@ -161,7 +161,7 @@ uvicorn app.main:app --reload
 ```
 
 ### Client Setup
-1. Open `client/` in Godot 4.5
+1. Open `client/` in Godot 4.5.1
 2. Configure API base URL in project settings
 3. Run scene: `scenes/main.tscn`
 
@@ -226,7 +226,7 @@ MIT License - See LICENSE file for details
 
 ## Acknowledgments
 
-Built with Godot 4.5, FastAPI, and Telegram Bot API.
+Built with Godot 4.5.1, FastAPI, and Telegram Bot API.
 
 ---
 
