@@ -1,3 +1,167 @@
-# Godot 4+ specific ignores
+# ============================================================================
+# Godot 4+ Client
+# ============================================================================
 .godot/
+.import/
 /android/
+/ios/
+
+# Godot builds and exports
+build/
+builds/
+*.zip
+*.apk
+*.app
+*.dmg
+*.exe
+*.x86_64
+*.x86
+*.pck
+*.html5/
+
+# ============================================================================
+# Python Backend (FastAPI)
+# ============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook (if used for data analysis)
+.ipynb_checkpoints
+
+# ============================================================================
+# Environment & Secrets
+# ============================================================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets/
+.secrets/
+
+# Keep example files
+!.env.example
+
+# ============================================================================
+# Database & Docker Volumes
+# ============================================================================
+*.db
+*.sqlite
+*.sqlite3
+/data/
+/postgres-data/
+/pgdata/
+/database/data/
+docker-compose.override.yml
+
+# ============================================================================
+# IDE & Editors
+# ============================================================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# Operating System
+# ============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ============================================================================
+# Logs & Temporary Files
+# ============================================================================
+*.log
+logs/
+*.tmp
+*.temp
+*.cache
+
+# ============================================================================
+# Project-Specific
+# ============================================================================
+# GitHub Actions artifacts (if downloaded locally)
+.github/workflows/*.log
+
+# Telegram sessions (if bot runs locally)
+*.session
+*.session-journal
+
+# Alembic migrations cache (if using DB migrations)
+alembic/versions/__pycache__/
+
+# API documentation builds (if generating locally)
+docs/_build/
+site/
