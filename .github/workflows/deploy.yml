@@ -22,19 +22,41 @@ jobs:
       - name: Download and setup Godot
         run: |
           # Download Godot
-          wget -q ${{ env.GODOT_DOWNLOAD_URL }} -O godot.zip
-          unzip -q godot.zip
-          chmod +x Godot_v4.5-dev6_linux.x86_64
-          sudo mv Godot_v4.5-dev6_linux.x86_64 /usr/local/bin/godot
+          echo "Downloading Godot from ${{ env.GODOT_DOWNLOAD_URL }}"
+          wget -v ${{ env.GODOT_DOWNLOAD_URL }} -O godot.zip
+          echo "Downloaded Godot, extracting..."
+          unzip godot.zip
+          ls -la
+
+          # Find the actual executable name
+          GODOT_EXEC=$(find . -maxdepth 1 -name "Godot_v4.5*" -type f)
+          echo "Found Godot executable: $GODOT_EXEC"
+          chmod +x "$GODOT_EXEC"
+          sudo mv "$GODOT_EXEC" /usr/local/bin/godot
 
           # Download export templates
-          wget -q ${{ env.GODOT_TEMPLATES_URL }} -O templates.tpz
+          echo "Downloading export templates from ${{ env.GODOT_TEMPLATES_URL }}"
+          wget -v ${{ env.GODOT_TEMPLATES_URL }} -O templates.tpz
+          echo "Downloaded templates, extracting..."
+
           mkdir -p ~/.local/share/godot/export_templates/4.5.dev6
-          unzip -q templates.tpz -d ~/.local/share/godot/export_templates/4.5.dev6
-          mv ~/.local/share/godot/export_templates/4.5.dev6/templates/* ~/.local/share/godot/export_templates/4.5.dev6/
+          unzip templates.tpz
+          ls -la
+
+          # Find and move templates
+          if [ -d "templates" ]; then
+            mv templates/* ~/.local/share/godot/export_templates/4.5.dev6/
+          else
+            echo "Templates directory structure:"
+            find . -type d -name "*template*"
+            # Try alternative extraction
+            unzip -o templates.tpz -d ~/.local/share/godot/export_templates/4.5.dev6/
+          fi
 
           # Verify installation
           godot --version
+          echo "Template location:"
+          ls -la ~/.local/share/godot/export_templates/
 
       - name: Export Godot project to HTML5
         run: |
