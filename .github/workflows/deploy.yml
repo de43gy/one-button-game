@@ -59,9 +59,26 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
+
+          # Save private key (preserve newlines)
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+
+          # Fix permissions
           chmod 600 ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+
+          # Debug: Check key format and line count
+          echo "SSH key first line:"
+          head -n 1 ~/.ssh/deploy_key
+          echo "SSH key line count:"
+          wc -l ~/.ssh/deploy_key
+
+          # Add known hosts
           ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+          # Test SSH connection with verbose output
+          echo "Testing SSH connection to ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}..."
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -vvv ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} "echo 'SSH connection successful'"
 
       - name: Deploy to VPS
         run: |
