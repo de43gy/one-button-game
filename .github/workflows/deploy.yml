@@ -7,7 +7,9 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.3"
+  GODOT_VERSION: "4.5.0-stable"
+  GODOT_DOWNLOAD_URL: "https://github.com/godotengine/godot-builds/releases/download/4.5-dev6/Godot_v4.5-dev6_linux.x86_64.zip"
+  GODOT_TEMPLATES_URL: "https://github.com/godotengine/godot-builds/releases/download/4.5-dev6/Godot_v4.5-dev6_export_templates.tpz"
 
 jobs:
   build-and-deploy:
@@ -17,15 +19,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Godot
-        uses: chickensoft-games/setup-godot@v2
-        with:
-          version: ${{ env.GODOT_VERSION }}
-          use-dotnet: false
-          include-templates: true
+      - name: Download and setup Godot
+        run: |
+          # Download Godot
+          wget -q ${{ env.GODOT_DOWNLOAD_URL }} -O godot.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.5-dev6_linux.x86_64
+          sudo mv Godot_v4.5-dev6_linux.x86_64 /usr/local/bin/godot
 
-      - name: Verify Godot installation
-        run: godot --version
+          # Download export templates
+          wget -q ${{ env.GODOT_TEMPLATES_URL }} -O templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.5.dev6
+          unzip -q templates.tpz -d ~/.local/share/godot/export_templates/4.5.dev6
+          mv ~/.local/share/godot/export_templates/4.5.dev6/templates/* ~/.local/share/godot/export_templates/4.5.dev6/
+
+          # Verify installation
+          godot --version
 
       - name: Export Godot project to HTML5
         run: |
