@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:16-alpine
-    container_name: game_db
+    container_name: godot-one-button-game-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -21,11 +21,11 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: game_backend
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/one-button-game-backend:latest
+    container_name: godot-one-button-game-backend
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
@@ -40,43 +40,17 @@ services:
       timeout: 10s
       retries: 3
 
-  nginx:
-    image: nginx:alpine
-    container_name: game_nginx
+  client:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/one-button-game-client:latest
+    container_name: godot-one-button-game-client
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./client_build:/usr/share/nginx/html:ro
-      - certbot_certs:/etc/letsencrypt:ro
-      - certbot_www:/var/www/certbot:ro
-    depends_on:
-      - backend
+      - "127.0.0.1:3001:80"
     networks:
       - game_network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  certbot:
-    image: certbot/certbot
-    container_name: game_certbot
-    volumes:
-      - certbot_certs:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
   postgres_data:
-    driver: local
-  certbot_certs:
-    driver: local
-  certbot_www:
     driver: local
 
 networks:

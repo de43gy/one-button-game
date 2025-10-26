@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Build and Deploy
 
 on:
   push:
@@ -6,16 +6,30 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
+  IMAGE_NAME_CLIENT: ${{ github.repository }}-client
+
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Export Godot Project to HTML5
-        id: export
         uses: firebelley/godot-export@v5.2.1
         with:
           godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
@@ -24,25 +38,50 @@ jobs:
           use_preset_export_path: true
           use_godot_4: true
 
-      - name: Verify export
+      - name: Verify Godot export
         run: |
-          echo "Export completed successfully"
-          ls -la build/
+          echo "Godot export completed"
           ls -la build/web/
-          find build/ -type f
+          find build/web/ -type f
 
-      - name: Prepare deployment package
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./client/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CLIENT }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CLIENT }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
         run: |
-          mkdir -p deploy_package
-          cp -r backend deploy_package/
-          cp -r nginx deploy_package/
-          cp -r database deploy_package/
-          cp -r build/web deploy_package/client_build
-          cp docker-compose.yml deploy_package/
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+          ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Generate .env file
         run: |
-          cat > deploy_package/.env << EOF
+          cat > .env << EOF
           # Database configuration
           DB_USER=${{ vars.DB_USER }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
@@ -51,75 +90,56 @@ jobs:
           # Telegram configuration
           TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-          # Server configuration
-          SERVER_HOST=${{ vars.SERVER_HOST }}
-          API_PORT=8000
+          # GitHub repository owner for image pulling
+          GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
           EOF
-
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-
-          # Save private key (preserve newlines)
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-
-          # Fix permissions
-          chmod 600 ~/.ssh/deploy_key
-          chmod 700 ~/.ssh
-
-          # Debug: Check key format and line count
-          echo "SSH key first line:"
-          head -n 1 ~/.ssh/deploy_key
-          echo "SSH key line count:"
-          wc -l ~/.ssh/deploy_key
-
-          # Add known hosts
-          ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
-
-          # Test SSH connection with verbose output
-          echo "Testing SSH connection to ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}..."
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -vvv ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} "echo 'SSH connection successful'"
 
       - name: Deploy to VPS
         run: |
-          # Create deployment directory on VPS
+          # Create deployment directory
           ssh -i ~/.ssh/deploy_key ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} \
-            "mkdir -p /opt/one-button-game"
+            "mkdir -p ${{ vars.DEPLOY_PATH }}/database"
 
-          # Copy files to VPS (including hidden files like .env)
-          cd deploy_package
-          scp -i ~/.ssh/deploy_key -r . \
-            ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/one-button-game/
-          cd ..
+          # Copy docker-compose.yml and .env
+          scp -i ~/.ssh/deploy_key docker-compose.yml \
+            ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:${{ vars.DEPLOY_PATH }}/
 
-          # Deploy with Docker Compose
+          scp -i ~/.ssh/deploy_key .env \
+            ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:${{ vars.DEPLOY_PATH }}/
+
+          # Copy database init script
+          scp -i ~/.ssh/deploy_key database/init.sql \
+            ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:${{ vars.DEPLOY_PATH }}/database/
+
+          # Deploy
           ssh -i ~/.ssh/deploy_key ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'ENDSSH'
-            cd /opt/one-button-game
+            cd ${{ vars.DEPLOY_PATH }}
 
-            # Pull latest images and rebuild
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest images
             docker-compose pull
-            docker-compose build --no-cache
 
-            # Stop old containers and start new ones
-            docker-compose down
+            # Restart services
             docker-compose up -d
 
             # Show status
             docker-compose ps
 
-            # Wait for services to be healthy
+            # Wait for health checks
             echo "Waiting for services to be healthy..."
-            sleep 10
+            sleep 15
             docker-compose ps
           ENDSSH
 
       - name: Verify deployment
         run: |
           ssh -i ~/.ssh/deploy_key ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} \
-            "cd /opt/one-button-game && docker-compose logs --tail=50"
+            "cd ${{ vars.DEPLOY_PATH }} && docker-compose logs --tail=20"
 
       - name: Cleanup
         if: always()
         run: |
           rm -rf ~/.ssh/deploy_key
-          rm -rf deploy_package
+          rm -f .env
