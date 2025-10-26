@@ -115,14 +115,17 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'ENDSSH'
             cd ${{ vars.DEPLOY_PATH }}
 
+            # Stop old containers
+            docker-compose down
+
             # Login to GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
             # Pull latest images
             docker-compose pull
 
-            # Restart services
-            docker-compose up -d
+            # Start services
+            docker-compose up -d --remove-orphans
 
             # Show status
             docker-compose ps
