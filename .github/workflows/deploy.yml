@@ -86,9 +86,11 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} \
             "mkdir -p /opt/one-button-game"
 
-          # Copy files to VPS
-          scp -i ~/.ssh/deploy_key -r deploy_package/* \
+          # Copy files to VPS (including hidden files like .env)
+          cd deploy_package
+          scp -i ~/.ssh/deploy_key -r . \
             ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/one-button-game/
+          cd ..
 
           # Deploy with Docker Compose
           ssh -i ~/.ssh/deploy_key ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'ENDSSH'
